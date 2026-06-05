@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}EducaSP Analytics{% endblock %}</title>
+
+  <!-- Material Icons + Roboto -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Material Web Components (MWC) via CDN -->
+  <link href="https://unpkg.com/material-components-web@14.0.0/dist/material-components-web.min.css" rel="stylesheet">
+
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body class="mdc-typography">
+
+  <!-- Top App Bar -->
+  <header class="mdc-top-app-bar mdc-top-app-bar--fixed app-bar">
+    <div class="mdc-top-app-bar__row">
+      <section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-start">
+        <button class="material-icons mdc-top-app-bar__navigation-icon mdc-icon-button" id="nav-toggle" aria-label="Abrir menu">menu</button>
+        <a href="{% url 'education:index' %}" class="mdc-top-app-bar__title brand-title">
+          <span class="material-icons brand-icon">school</span>
+          EducaSP Analytics
+        </a>
+      </section>
+      <section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-end">
+        <span class="app-bar-subtitle mdc-typography--body2">TCC · UNIVESP 2026</span>
+      </section>
+    </div>
+  </header>
+
+  <!-- Navigation Drawer -->
+  <aside class="mdc-drawer mdc-drawer--dismissible" id="app-drawer">
+    <div class="mdc-drawer__header">
+      <h3 class="mdc-drawer__title">EducaSP</h3>
+      <h6 class="mdc-drawer__subtitle">645 municípios · SP</h6>
+    </div>
+    <div class="mdc-drawer__content">
+      <nav class="mdc-list">
+        <a class="mdc-list-item {% if request.resolver_match.url_name == 'index' %}mdc-list-item--activated{% endif %}"
+           href="{% url 'education:index' %}" aria-current="page">
+          <span class="mdc-list-item__ripple"></span>
+          <span class="mdc-list-item__graphic material-icons">dashboard</span>
+          <span class="mdc-list-item__text">Painel</span>
+        </a>
+        <a class="mdc-list-item {% if 'municipio' in request.resolver_match.url_name %}mdc-list-item--activated{% endif %}"
+           href="{% url 'education:municipio_list' %}">
+          <span class="mdc-list-item__ripple"></span>
+          <span class="mdc-list-item__graphic material-icons">location_city</span>
+          <span class="mdc-list-item__text">Municípios</span>
+        </a>
+        <a class="mdc-list-item {% if request.resolver_match.url_name == 'mapa' %}mdc-list-item--activated{% endif %}"
+           href="{% url 'education:mapa' %}">
+          <span class="mdc-list-item__ripple"></span>
+          <span class="mdc-list-item__graphic material-icons">map</span>
+          <span class="mdc-list-item__text">Mapa Interativo</span>
+        </a>
+        <a class="mdc-list-item {% if request.resolver_match.url_name == 'analise' %}mdc-list-item--activated{% endif %}"
+           href="{% url 'education:analise' %}">
+          <span class="mdc-list-item__ripple"></span>
+          <span class="mdc-list-item__graphic material-icons">insights</span>
+          <span class="mdc-list-item__text">Análise Exploratória</span>
+        </a>
+        <a class="mdc-list-item {% if request.resolver_match.url_name == 'clusters' %}mdc-list-item--activated{% endif %}"
+           href="{% url 'education:clusters' %}">
+          <span class="mdc-list-item__ripple"></span>
+          <span class="mdc-list-item__graphic material-icons">bubble_chart</span>
+          <span class="mdc-list-item__text">Perfis (K-Means)</span>
+        </a>
+        <a class="mdc-list-item {% if 'modelo' in request.resolver_match.url_name %}mdc-list-item--activated{% endif %}"
+           href="{% url 'education:modelos' %}">
+          <span class="mdc-list-item__ripple"></span>
+          <span class="mdc-list-item__graphic material-icons">model_training</span>
+          <span class="mdc-list-item__text">Modelos Preditivos</span>
+        </a>
+      </nav>
+    </div>
+  </aside>
+
+  <!-- Scrim -->
+  <div class="mdc-drawer-scrim" id="drawer-scrim"></div>
+
+  <!-- Main content -->
+  <div class="mdc-drawer-app-content">
+    <main class="main-content mdc-top-app-bar--fixed-adjust" id="main-content">
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="app-footer mdc-typography--caption">
+      <div class="footer-inner">
+        <span>TCC · Bacharelado em Ciência de Dados · UNIVESP 2026</span>
+        <span>Fontes: INEP (Censo Escolar, IDEB, SAEB, ENEM, INSE, TDI, AFD, Rendimento) · FNDE/SIOPE · IBGE · MDS</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- MWC JS -->
+  <script src="https://unpkg.com/material-components-web@14.0.0/dist/material-components-web.min.js"></script>
+  <script>
+    // Drawer toggle
+    const drawer = mdc.drawer.MDCDrawer.attachTo(document.getElementById('app-drawer'));
+    document.getElementById('nav-toggle').addEventListener('click', () => {
+      drawer.open = !drawer.open;
+    });
+    document.getElementById('drawer-scrim').addEventListener('click', () => {
+      drawer.open = false;
+    });
+  </script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+.Python
+
+# Ambiente virtual
+.venv/
+venv/
+env/
+
+# Variáveis de ambiente / segredos
+.env
+.env.*
+!.env.example
+
+# Django
+*.log
+local_settings.py
+
+# Arquivos gerados por collectstatic (regeneráveis com `python manage.py collectstatic`)
+staticfiles/
+
+# IDEs / editores
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Coverage / testes
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# Banco de dados de desenvolvimento alternativos (mantém apenas db.sqlite3 com dados públicos do INEP/IBGE)
+*.sqlite3-journal
+db.sqlite3.bak

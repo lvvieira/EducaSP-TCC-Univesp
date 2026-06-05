@@ -1,0 +1,192 @@
+{% extends 'education/base.html' %}
+{% load humanize %}
+
+{% block title %}Painel · EducaSP Analytics{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="hero-text">
+    <span class="hero-eyebrow">TCC · UNIVESP 2026</span>
+    <h1>Determinantes do abandono e desempenho escolar nos municípios paulistas</h1>
+    <p>
+      Painel analítico com {{ n_municipios }} municípios, 6 anos de dados e 12 fontes públicas integradas.
+      Explore o ranking, o mapa coroplético, os perfis K-Means e os modelos preditivos.
+    </p>
+    <div class="hero-actions">
+      <a href="{% url 'education:mapa' %}" class="hero-btn hero-btn--primary">
+        <span class="material-icons">map</span> Explorar mapa
+      </a>
+      <a href="{% url 'education:municipio_list' %}" class="hero-btn">
+        <span class="material-icons">location_city</span> Ver municípios
+      </a>
+    </div>
+  </div>
+  <div class="hero-stats">
+    <div class="hero-stat"><span>{{ n_municipios }}</span><small>municípios</small></div>
+    <div class="hero-stat"><span>3.870</span><small>observações</small></div>
+    <div class="hero-stat"><span>{{ n_clusters }}</span><small>perfis</small></div>
+    <div class="hero-stat"><span>{{ n_modelos }}</span><small>modelos</small></div>
+  </div>
+</section>
+
+<h2 class="section-heading">Indicadores agregados (2023)</h2>
+<section class="kpi-grid">
+  <div class="kpi-card mdc-elevation--z2">
+    <div class="kpi-icon kpi-icon--red"><span class="material-icons">trending_down</span></div>
+    <div class="kpi-body">
+      <span class="kpi-label">Abandono médio EM</span>
+      <span class="kpi-value">{{ stats.abandono_med|floatformat:2 }}<span class="kpi-unit">%</span></span>
+      <span class="kpi-sub">média estadual</span>
+    </div>
+  </div>
+
+  <div class="kpi-card mdc-elevation--z2">
+    <div class="kpi-icon kpi-icon--green"><span class="material-icons">school</span></div>
+    <div class="kpi-body">
+      <span class="kpi-label">IDEB médio</span>
+      <span class="kpi-value">{{ stats.ideb_med|floatformat:2 }}</span>
+      <span class="kpi-sub">escala 0–10</span>
+    </div>
+  </div>
+
+  <div class="kpi-card mdc-elevation--z2">
+    <div class="kpi-icon kpi-icon--purple"><span class="material-icons">menu_book</span></div>
+    <div class="kpi-body">
+      <span class="kpi-label">SAEB MT (3ª EM)</span>
+      <span class="kpi-value">{{ stats.saeb_med|floatformat:1 }}</span>
+      <span class="kpi-sub">proficiência</span>
+    </div>
+  </div>
+
+  <div class="kpi-card mdc-elevation--z2">
+    <div class="kpi-icon kpi-icon--amber"><span class="material-icons">payments</span></div>
+    <div class="kpi-body">
+      <span class="kpi-label">Gasto/aluno</span>
+      <span class="kpi-value">R$ {{ stats.gasto_med|floatformat:0|intcomma }}</span>
+      <span class="kpi-sub">média anual</span>
+    </div>
+  </div>
+
+  <div class="kpi-card mdc-elevation--z2">
+    <div class="kpi-icon kpi-icon--blue"><span class="material-icons">families</span></div>
+    <div class="kpi-body">
+      <span class="kpi-label">INSE médio</span>
+      <span class="kpi-value">{{ stats.inse_med|floatformat:2 }}</span>
+      <span class="kpi-sub">socioeconômico</span>
+    </div>
+  </div>
+</section>
+
+<h2 class="section-heading">Evolução temporal (2019–2024)</h2>
+<section class="chart-grid chart-grid--3">
+  <div class="chart-card mdc-elevation--z2">
+    <header class="chart-card__header">
+      <h2 class="mdc-typography--headline6">Abandono no Ensino Médio</h2>
+      <span class="muted mdc-typography--caption">% matrículas EM</span>
+    </header>
+    <div class="chart-wrap"><canvas id="chartAbandono"></canvas></div>
+  </div>
+  <div class="chart-card mdc-elevation--z2">
+    <header class="chart-card__header">
+      <h2 class="mdc-typography--headline6">IDEB médio</h2>
+      <span class="muted mdc-typography--caption">média estadual</span>
+    </header>
+    <div class="chart-wrap"><canvas id="chartIdeb"></canvas></div>
+  </div>
+  <div class="chart-card mdc-elevation--z2">
+    <header class="chart-card__header">
+      <h2 class="mdc-typography--headline6">Gasto por aluno</h2>
+      <span class="muted mdc-typography--caption">R$ nominais</span>
+    </header>
+    <div class="chart-wrap"><canvas id="chartGasto"></canvas></div>
+  </div>
+  <div class="chart-card mdc-elevation--z2">
+    <header class="chart-card__header">
+      <h2 class="mdc-typography--headline6">SAEB Matemática (3ª EM)</h2>
+      <span class="muted mdc-typography--caption">proficiência média</span>
+    </header>
+    <div class="chart-wrap"><canvas id="chartSaeb"></canvas></div>
+  </div>
+  <div class="chart-card mdc-elevation--z2">
+    <header class="chart-card__header">
+      <h2 class="mdc-typography--headline6">ENEM (média geral)</h2>
+      <span class="muted mdc-typography--caption">município-nível</span>
+    </header>
+    <div class="chart-wrap"><canvas id="chartEnem"></canvas></div>
+  </div>
+  <div class="chart-card mdc-elevation--z2">
+    <header class="chart-card__header">
+      <h2 class="mdc-typography--headline6">TDI Ensino Médio</h2>
+      <span class="muted mdc-typography--caption">distorção idade-série</span>
+    </header>
+    <div class="chart-wrap"><canvas id="chartTdi"></canvas></div>
+  </div>
+</section>
+
+<h2 class="section-heading">Destaques e alertas</h2>
+<section class="chart-grid chart-grid--2">
+  <div class="ranking-card mdc-elevation--z2">
+    <header><span class="material-icons">military_tech</span><h3>Top 5 IDEB médio</h3></header>
+    <ol>
+      {% for m in top_ideb %}
+        <li>
+          <a href="{% url 'education:municipio_detail' m.co_municipio %}">{{ m.no_municipio }}</a>
+          <span>{{ m.ideb|floatformat:2 }}</span>
+        </li>
+      {% endfor %}
+    </ol>
+  </div>
+
+  <div class="ranking-card mdc-elevation--z2 ranking-card--alert">
+    <header><span class="material-icons">warning</span><h3>Top 5 maior abandono EM</h3></header>
+    <ol>
+      {% for m in top_abandono %}
+        <li>
+          <a href="{% url 'education:municipio_detail' m.co_municipio %}">{{ m.no_municipio }}</a>
+          <span>{{ m.ab|floatformat:2 }}%</span>
+        </li>
+      {% endfor %}
+    </ol>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{{ series_json|json_script:"series-data" }}
+<script>
+  const series = JSON.parse(document.getElementById('series-data').textContent);
+
+  const opts = (color) => ({
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+    scales: {
+      x: { grid: { color: 'rgba(0,0,0,0.04)' } },
+      y: { grid: { color: 'rgba(0,0,0,0.04)' } }
+    }
+  });
+
+  const mkChart = (id, data, color, label) => {
+    new Chart(document.getElementById(id), {
+      type: 'line',
+      data: {
+        labels: data.map(d => d.ano),
+        datasets: [{
+          label, data: data.map(d => d.valor),
+          borderColor: color,
+          backgroundColor: color + '20',
+          fill: true, tension: 0.35, borderWidth: 3, pointRadius: 4
+        }]
+      },
+      options: opts(color)
+    });
+  };
+
+  mkChart('chartAbandono', series.abandono, '#d32f2f', 'Abandono EM (%)');
+  mkChart('chartIdeb',     series.ideb,     '#2e7d32', 'IDEB médio');
+  mkChart('chartGasto',    series.gasto,    '#ef6c00', 'Gasto/aluno');
+  mkChart('chartSaeb',     series.saeb_mt,  '#1565c0', 'SAEB MT');
+  mkChart('chartEnem',     series.enem,     '#6a1b9a', 'ENEM geral');
+  mkChart('chartTdi',      series.tdi,      '#5d4037', 'TDI EM');
+</script>
+{% endblock %}

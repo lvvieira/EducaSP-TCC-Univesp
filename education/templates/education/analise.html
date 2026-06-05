@@ -1,0 +1,47 @@
+{% extends 'education/base.html' %}
+{% load static %}
+
+{% block title %}Análise Exploratória · EducaSP Analytics{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <h1 class="mdc-typography--headline4">Análise Exploratória</h1>
+  <p class="mdc-typography--subtitle1 muted">
+    Galeria temática com {{ secoes|length }} blocos de análise. Cada gráfico foi gerado pelo pipeline
+    em Python (pandas + matplotlib + seaborn) sobre o painel completo de 645 municípios × 6 anos.
+    Clique em uma figura para ampliar.
+  </p>
+</section>
+
+<nav class="analise-nav mdc-elevation--z1">
+  {% for s in secoes %}
+    <a href="#sec-{{ forloop.counter }}" class="analise-tab">
+      <span class="material-icons">{{ s.icone }}</span>
+      <span>{{ s.titulo }}</span>
+      <small>{{ s.figs|length }}</small>
+    </a>
+  {% endfor %}
+</nav>
+
+{% for s in secoes %}
+  <section class="analise-secao" id="sec-{{ forloop.counter }}">
+    <header class="analise-header analise-header--{{ s.cor }}">
+      <span class="material-icons">{{ s.icone }}</span>
+      <div>
+        <h2>{{ s.titulo }}</h2>
+        <p class="muted">{{ s.descricao }}</p>
+      </div>
+    </header>
+    <div class="analise-grid">
+      {% for arquivo, legenda in s.figs %}
+        <figure class="analise-card mdc-elevation--z2">
+          <a href="{% static 'graficos/' %}{{ arquivo }}" target="_blank" rel="noopener">
+            <img src="{% static 'graficos/' %}{{ arquivo }}" alt="{{ legenda }}" loading="lazy">
+          </a>
+          <figcaption>{{ legenda }}</figcaption>
+        </figure>
+      {% endfor %}
+    </div>
+  </section>
+{% endfor %}
+{% endblock %}

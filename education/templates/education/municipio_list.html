@@ -1,0 +1,89 @@
+{% extends 'education/base.html' %}
+
+{% block title %}Municípios · EducaSP Analytics{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <h1 class="mdc-typography--headline4">Ranking de Municípios</h1>
+  <p class="mdc-typography--subtitle1 muted">
+    Compare os 645 municípios paulistas pelos principais indicadores. Clique no nome para ver detalhes.
+  </p>
+</section>
+
+<form method="get" class="filters mdc-elevation--z1">
+  <div class="filter-field">
+    <span class="material-icons">search</span>
+    <input type="text" name="q" value="{{ q }}" placeholder="Buscar município…">
+  </div>
+
+  <div class="filter-field">
+    <label class="filter-label">Ano</label>
+    <select name="ano">
+      {% for a in anos %}
+        <option value="{{ a }}" {% if a == ano %}selected{% endif %}>{{ a }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="filter-field">
+    <label class="filter-label">Ordenar por</label>
+    <select name="ordem">
+      <option value="no_municipio" {% if ordem == 'no_municipio' %}selected{% endif %}>Nome</option>
+      <option value="abandono"     {% if ordem == 'abandono'     %}selected{% endif %}>Abandono EM</option>
+      <option value="ideb"         {% if ordem == 'ideb'         %}selected{% endif %}>IDEB médio</option>
+      <option value="gasto"        {% if ordem == 'gasto'        %}selected{% endif %}>Gasto/aluno</option>
+      <option value="saeb"         {% if ordem == 'saeb'         %}selected{% endif %}>SAEB MT</option>
+    </select>
+  </div>
+
+  <div class="filter-field filter-toggle">
+    <label>
+      <input type="checkbox" name="desc" value="1" {% if desc %}checked{% endif %}>
+      <span>Decrescente</span>
+    </label>
+  </div>
+
+  <button type="submit" class="mdc-button mdc-button--raised">
+    <span class="mdc-button__ripple"></span>
+    <span class="material-icons mdc-button__icon">filter_alt</span>
+    <span class="mdc-button__label">Aplicar</span>
+  </button>
+</form>
+
+<div class="table-card mdc-elevation--z2">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Município</th>
+        <th class="num">Abandono EM (%)</th>
+        <th class="num">IDEB médio</th>
+        <th class="num">SAEB MT</th>
+        <th class="num">Gasto/aluno (R$)</th>
+        <th class="num">INSE</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in municipios %}
+        <tr>
+          <td><strong>{{ m.no_municipio }}</strong></td>
+          <td class="num">{{ m.abandono|default_if_none:"—"|floatformat:2 }}</td>
+          <td class="num">{{ m.ideb|default_if_none:"—"|floatformat:2 }}</td>
+          <td class="num">{{ m.saeb|default_if_none:"—"|floatformat:1 }}</td>
+          <td class="num">{{ m.gasto|default_if_none:"—"|floatformat:0 }}</td>
+          <td class="num">{{ m.inse|default_if_none:"—"|floatformat:2 }}</td>
+          <td class="num">
+            <a class="mdc-button mdc-button--outlined mdc-button--dense"
+               href="{% url 'education:municipio_detail' m.co_municipio %}">
+              <span class="mdc-button__ripple"></span>
+              <span class="mdc-button__label">Detalhe</span>
+            </a>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7" class="empty">Nenhum município encontrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

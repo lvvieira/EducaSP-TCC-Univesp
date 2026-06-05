@@ -1,0 +1,258 @@
+{% extends 'education/base.html' %}
+{% load static %}
+
+{% block title %}Perfis K-Means · EducaSP Analytics{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <h1 class="mdc-typography--headline4">Perfis Municipais (K-Means)</h1>
+  <p class="mdc-typography--subtitle1 muted">
+    Os 645 municípios paulistas foram agrupados de forma não supervisionada em perfis homogêneos
+    a partir de 10 indicadores socioeconômicos, de financiamento e desempenho.
+    O número ótimo de grupos foi <strong>k = 2</strong> (silhouette = 0,152).
+  </p>
+</section>
+
+<section class="kpi-grid">
+  {% for p in perfis %}
+    <div class="kpi-card mdc-elevation--z2">
+      <div class="kpi-icon kpi-icon--purple"><span class="material-icons">groups</span></div>
+      <div class="kpi-body">
+        <span class="kpi-label">Cluster {{ p.cluster_num }} — {{ p.cluster_label }}</span>
+        <span class="kpi-value">{{ p.n }}</span>
+        <span class="kpi-sub">municípios</span>
+      </div>
+    </div>
+  {% endfor %}
+</section>
+
+<section class="chart-grid chart-grid--2">
+  <div class="chart-card mdc-elevation--z2">
+    <header class="chart-card__header">
+      <h2 class="mdc-typography--headline6">Perfil médio de cada cluster</h2>
+      <span class="muted mdc-typography--caption">Indicadores normalizados (0 = pior, 1 = melhor do conjunto)</span>
+    </header>
+    <div class="chart-wrap"><canvas id="chartPerfil"></canvas></div>
+  </div>
+
+  <div class="chart-card mdc-elevation--z2">
+    <header class="chart-card__header">
+      <h2 class="mdc-typography--headline6">Distribuição de municípios</h2>
+      <span class="muted mdc-typography--caption">Tamanho de cada cluster</span>
+    </header>
+    <div class="chart-wrap"><canvas id="chartTamanho"></canvas></div>
+  </div>
+</section>
+
+<section class="chart-grid chart-grid--2">
+  <div class="chart-card mdc-elevation--z2">
+    <header class="chart-card__header">
+      <h2 class="mdc-typography--headline6">Comparação direta por indicador</h2>
+      <span class="muted mdc-typography--caption">Valor médio em cada perfil (escalas independentes)</span>
+    </header>
+    <div class="chart-wrap" style="height: 320px;"><canvas id="chartBars"></canvas></div>
+  </div>
+
+  <div class="chart-card mdc-elevation--z2 info-narrative">
+    <header class="chart-card__header"><h2 class="mdc-typography--headline6">Como ler os perfis</h2></header>
+    <p>
+      A clusterização agrupa municípios com características <em>estruturalmente</em> semelhantes.
+      Em SP, dois grandes blocos emergem:
+    </p>
+    <ul>
+      <li><strong>Mais favorecido</strong>: PIB per capita maior, INSE mais alto, taxa de analfabetismo menor e desempenho educacional consistentemente melhor.</li>
+      <li><strong>Mais vulnerável</strong>: PIB per capita menor, dependência maior de Bolsa Família e desempenho educacional inferior — ainda que o gasto por aluno seja praticamente equivalente.</li>
+    </ul>
+    <p class="muted mdc-typography--caption">
+      Para cada município, o perfil aparece no cabeçalho da página de detalhe e ajuda a comparar contra municípios pares, em vez de contra a média estadual inteira.
+    </p>
+  </div>
+</section>
+
+<h2 class="section-heading">Validação e visualização do modelo</h2>
+<section class="chart-grid chart-grid--2">
+  <figure class="analise-card mdc-elevation--z2">
+    <a href="{% static 'graficos/G1_kmeans_cotovelo_silhouette_sp.png' %}" target="_blank" rel="noopener">
+      <img src="{% static 'graficos/G1_kmeans_cotovelo_silhouette_sp.png' %}" alt="Cotovelo + silhouette" loading="lazy">
+    </a>
+    <figcaption>Método do cotovelo + coeficiente de silhouette para definir <em>k</em> ótimo</figcaption>
+  </figure>
+  <figure class="analise-card mdc-elevation--z2">
+    <a href="{% static 'graficos/G2_kmeans_pca_scatter_sp.png' %}" target="_blank" rel="noopener">
+      <img src="{% static 'graficos/G2_kmeans_pca_scatter_sp.png' %}" alt="PCA scatter" loading="lazy">
+    </a>
+    <figcaption>Projeção PCA — municípios coloridos por cluster</figcaption>
+  </figure>
+  <figure class="analise-card mdc-elevation--z2">
+    <a href="{% static 'graficos/G3_kmeans_perfis_heatmap_sp.png' %}" target="_blank" rel="noopener">
+      <img src="{% static 'graficos/G3_kmeans_perfis_heatmap_sp.png' %}" alt="Heatmap perfis" loading="lazy">
+    </a>
+    <figcaption>Heatmap dos perfis (valores normalizados por indicador)</figcaption>
+  </figure>
+  <figure class="analise-card mdc-elevation--z2">
+    <a href="{% static 'graficos/G6_kmeans_boxplot_por_cluster_sp.png' %}" target="_blank" rel="noopener">
+      <img src="{% static 'graficos/G6_kmeans_boxplot_por_cluster_sp.png' %}" alt="Boxplot por cluster" loading="lazy">
+    </a>
+    <figcaption>Boxplot dos indicadores por cluster — distribuição interna</figcaption>
+  </figure>
+</section>
+
+<section class="table-card mdc-elevation--z2">
+  <h2 class="mdc-typography--headline6 table-title">Características de cada perfil</h2>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Cluster</th>
+        <th>Perfil</th>
+        <th class="num">N</th>
+        <th class="num">Abandono médio (%)</th>
+        <th class="num">IDEB médio</th>
+        <th class="num">Gasto/aluno (R$)</th>
+        <th class="num">INSE médio</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in perfis %}
+        <tr>
+          <td><strong>{{ p.cluster_num }}</strong></td>
+          <td><span class="chip chip--{{ p.cluster_num }}">{{ p.cluster_label }}</span></td>
+          <td class="num">{{ p.n }}</td>
+          <td class="num">{{ p.abandono|floatformat:2 }}</td>
+          <td class="num">{{ p.ideb|floatformat:2 }}</td>
+          <td class="num">{{ p.gasto|floatformat:0 }}</td>
+          <td class="num">{{ p.inse|floatformat:2 }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="table-card mdc-elevation--z2">
+  <h2 class="mdc-typography--headline6 table-title">Municípios por cluster</h2>
+  <input type="text" id="cluster-search" class="cluster-search-input" placeholder="🔎 Filtrar por nome do município…">
+  <table class="data-table" id="cluster-table">
+    <thead>
+      <tr>
+        <th>Município</th>
+        <th>Cluster</th>
+        <th>Perfil</th>
+        <th class="num">Abandono médio</th>
+        <th class="num">IDEB médio</th>
+        <th class="num">Gasto/aluno</th>
+        <th class="num">INSE</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in municipios %}
+        <tr>
+          <td><strong>{{ c.municipio.no_municipio }}</strong></td>
+          <td class="num">{{ c.cluster_num }}</td>
+          <td><span class="chip chip--{{ c.cluster_num }}">{{ c.cluster_label }}</span></td>
+          <td class="num">{{ c.abandono_medio|default_if_none:"—"|floatformat:2 }}</td>
+          <td class="num">{{ c.ideb_medio|default_if_none:"—"|floatformat:2 }}</td>
+          <td class="num">{{ c.gasto_medio|default_if_none:"—"|floatformat:0 }}</td>
+          <td class="num">{{ c.inse_medio|default_if_none:"—"|floatformat:2 }}</td>
+          <td class="num">
+            <a class="mdc-button mdc-button--outlined mdc-button--dense"
+               href="{% url 'education:municipio_detail' c.municipio.co_municipio %}">
+              <span class="mdc-button__ripple"></span>
+              <span class="mdc-button__label">Detalhe</span>
+            </a>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{{ perfis_json|json_script:"perfis-data" }}
+<script>
+  const perfis = JSON.parse(document.getElementById('perfis-data').textContent);
+  const palette = ['#1976d2','#d32f2f','#2e7d32','#f57c00','#7b1fa2','#00838f','#5d4037'];
+
+  // Radar normalizado: 1 = melhor entre os perfis, 0 = pior. Para abandono, invertemos.
+  const indKeys = ['abandono','ideb','gasto','inse'];
+  const indLabels = ['Abandono (invertido)', 'IDEB', 'Gasto/aluno', 'INSE'];
+  const isInverted = { abandono: true };
+
+  const minBy = {}, maxBy = {};
+  indKeys.forEach(k => {
+    const vals = perfis.map(p => p[k]).filter(v => v != null);
+    minBy[k] = Math.min(...vals);
+    maxBy[k] = Math.max(...vals);
+  });
+  const norm = (v, k) => {
+    if (v == null || maxBy[k] === minBy[k]) return 0.5;
+    const t = (v - minBy[k]) / (maxBy[k] - minBy[k]);
+    return isInverted[k] ? 1 - t : t;
+  };
+
+  new Chart(document.getElementById('chartPerfil'), {
+    type: 'radar',
+    data: {
+      labels: indLabels,
+      datasets: perfis.map((p, i) => ({
+        label: `Cluster ${p.num} · ${p.label}`,
+        data: indKeys.map(k => norm(p[k], k)),
+        borderColor: palette[i % palette.length],
+        backgroundColor: palette[i % palette.length] + '33',
+        borderWidth: 2.5,
+        pointRadius: 5
+      }))
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { r: { min: 0, max: 1, ticks: { stepSize: 0.25, display: false } } },
+      plugins: { legend: { position: 'bottom' } }
+    }
+  });
+
+  new Chart(document.getElementById('chartTamanho'), {
+    type: 'doughnut',
+    data: {
+      labels: perfis.map(p => `C${p.num} · ${p.label}`),
+      datasets: [{
+        data: perfis.map(p => p.n),
+        backgroundColor: perfis.map((_, i) => palette[i % palette.length]),
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom' } }
+    }
+  });
+
+  // Bar chart com valores reais por indicador (4 grupos, 2 barras cada)
+  new Chart(document.getElementById('chartBars'), {
+    type: 'bar',
+    data: {
+      labels: perfis.map(p => `C${p.num} · ${p.label}`),
+      datasets: [
+        { label: 'Abandono EM (%)', data: perfis.map(p => p.abandono), backgroundColor: '#d32f2f', yAxisID: 'y' },
+        { label: 'IDEB médio',      data: perfis.map(p => p.ideb),     backgroundColor: '#2e7d32', yAxisID: 'y' },
+        { label: 'INSE',            data: perfis.map(p => p.inse),     backgroundColor: '#00838f', yAxisID: 'y' },
+        { label: 'Gasto/aluno (k R$)', data: perfis.map(p => p.gasto/1000), backgroundColor: '#f57c00', yAxisID: 'y' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom' } },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+
+  // Live search
+  const search = document.getElementById('cluster-search');
+  search.addEventListener('input', (e) => {
+    const q = e.target.value.toLowerCase().trim();
+    document.querySelectorAll('#cluster-table tbody tr').forEach(tr => {
+      tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+</script>
+{% endblock %}

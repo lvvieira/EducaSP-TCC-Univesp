@@ -1,0 +1,320 @@
+{% extends 'education/base.html' %}
+{% load humanize %}
+
+{% block title %}{{ mun.no_municipio }} · EducaSP Analytics{% endblock %}
+
+{% block content %}
+<section class="page-header detail-header">
+  <div>
+    <a href="{% url 'education:municipio_list' %}" class="back-link">
+      <span class="material-icons">arrow_back</span> voltar ao ranking
+    </a>
+    <h1 class="mdc-typography--headline4">{{ mun.no_municipio }}</h1>
+    <p class="mdc-typography--subtitle1 muted">
+      Diagnóstico educacional · IBGE {{ mun.co_municipio }} · {{ mun.uf }}
+    </p>
+  </div>
+
+  <div class="detail-badges">
+    {% if cluster %}
+      <div class="cluster-badge">
+        <span class="material-icons">bubble_chart</span>
+        <div>
+          <span class="cluster-label">Perfil K-Means</span>
+          <strong>Cluster {{ cluster.cluster_num }} — {{ cluster.cluster_label }}</strong>
+        </div>
+      </div>
+    {% endif %}
+    {% if risco_abandono %}
+      <div class="cluster-badge {% if risco_abandono == 'alto' %}badge--alert{% else %}badge--ok{% endif %}">
+        <span class="material-icons">{% if risco_abandono == 'alto' %}warning{% else %}verified{% endif %}</span>
+        <div>
+          <span class="cluster-label">Risco de abandono</span>
+          <strong>{% if risco_abandono == 'alto' %}Acima da média{% else %}Abaixo da média{% endif %}</strong>
+        </div>
+      </div>
+    {% endif %}
+    {% if nivel_desempenho %}
+      <div class="cluster-badge {% if nivel_desempenho == 'alto' %}badge--ok{% else %}badge--alert{% endif %}">
+        <span class="material-icons">{% if nivel_desempenho == 'alto' %}trending_up{% else %}trending_down{% endif %}</span>
+        <div>
+          <span class="cluster-label">Desempenho (IDEB)</span>
+          <strong>{% if nivel_desempenho == 'alto' %}Acima da média{% else %}Abaixo da média{% endif %}</strong>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+{# ─── DIAGNÓSTICO RÁPIDO ─────────────────────────────────────────────────── #}
+<section class="diag-grid">
+  <div class="diag-card mdc-elevation--z2 diag-strengths">
+    <header>
+      <span class="material-icons">military_tech</span>
+      <h2>Pontos fortes</h2>
+      <span class="muted mdc-typography--caption">Top 3 indicadores acima da média estadual</span>
+    </header>
+    {% if forcas %}
+      <ul>
+        {% for f in forcas %}
+          <li>
+            <strong>{{ f.rotulo }}</strong>
+            <span class="diag-meta">
+              {{ f.valor|floatformat:2 }} · <em>percentil {{ f.percentil }}</em>
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty">Sem dados suficientes para identificar pontos fortes.</p>
+    {% endif %}
+  </div>
+
+  <div class="diag-card mdc-elevation--z2 diag-vulns">
+    <header>
+      <span class="material-icons">priority_high</span>
+      <h2>Pontos de atenção</h2>
+      <span class="muted mdc-typography--caption">Top 3 indicadores abaixo do esperado</span>
+    </header>
+    {% if vulneras %}
+      <ul>
+        {% for v in vulneras %}
+          <li>
+            <strong>{{ v.rotulo }}</strong>
+            <span class="diag-meta">
+              {{ v.valor|floatformat:2 }} · <em>percentil {{ v.percentil }}</em>
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty">Sem indicadores em situação crítica.</p>
+    {% endif %}
+  </div>
+
+  <div class="diag-card mdc-elevation--z2">
+    <header>
+      <span class="material-icons">radar</span>
+      <h2>Posicionamento relativo</h2>
+      <span class="muted mdc-typography--caption">Município vs. média estadual e do cluster</span>
+    </header>
+    <div class="chart-wrap" style="height: 280px;"><canvas id="radar"></canvas></div>
+  </div>
+</section>
+
+{# ─── INDICADORES INDIVIDUAIS ────────────────────────────────────────────── #}
+<section class="info-card mdc-elevation--z2">
+  <h2 class="mdc-typography--headline6">Indicadores-chave (último ano disponível)</h2>
+  <p class="muted mdc-typography--caption">Compare o município com a média de SP e com a média de outros municípios do mesmo perfil.</p>
+
+  <div class="diag-table-wrap">
+    <table class="data-table data-table--diag">
+      <thead>
+        <tr>
+          <th>Indicador</th>
+          <th class="num">Município</th>
+          <th class="num">Média SP</th>
+          <th class="num">Média cluster</th>
+          <th class="num">Percentil</th>
+          <th>Posição</th>
+          <th class="muted">Ano</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in diagnostico %}
+          <tr>
+            <td><strong>{{ d.rotulo }}</strong></td>
+            <td class="num">{{ d.valor|default_if_none:"—"|floatformat:2 }}</td>
+            <td class="num muted">{{ d.media_sp|default_if_none:"—"|floatformat:2 }}</td>
+            <td class="num muted">{{ d.media_cluster|default_if_none:"—"|floatformat:2 }}</td>
+            <td class="num">{{ d.percentil|default_if_none:"—" }}</td>
+            <td>
+              {% if d.classe == 'forca' %}
+                <span class="pill pill--ok"><span class="material-icons">check_circle</span> força</span>
+              {% elif d.classe == 'alerta' %}
+                <span class="pill pill--warn"><span class="material-icons">remove_circle</span> mediano</span>
+              {% elif d.classe == 'vulnerabilidade' %}
+                <span class="pill pill--bad"><span class="material-icons">error</span> alerta</span>
+              {% else %}
+                <span class="pill pill--off">sem dado</span>
+              {% endif %}
+            </td>
+            <td class="muted mdc-typography--caption">{{ d.ano }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{# ─── EVOLUÇÃO TEMPORAL ──────────────────────────────────────────────────── #}
+<h2 class="section-heading">Evolução temporal (2019–2024)</h2>
+<section class="chart-grid chart-grid--3">
+  <div class="chart-card mdc-elevation--z2">
+    <header class="chart-card__header"><h2 class="mdc-typography--headline6">Abandono escolar</h2></header>
+    <div class="chart-wrap"><canvas id="chartAbandono"></canvas></div>
+  </div>
+  <div class="chart-card mdc-elevation--z2">
+    <header class="chart-card__header"><h2 class="mdc-typography--headline6">IDEB</h2></header>
+    <div class="chart-wrap"><canvas id="chartIdeb"></canvas></div>
+  </div>
+  <div class="chart-card mdc-elevation--z2">
+    <header class="chart-card__header"><h2 class="mdc-typography--headline6">SAEB 3ª EM</h2></header>
+    <div class="chart-wrap"><canvas id="chartSaeb"></canvas></div>
+  </div>
+  <div class="chart-card mdc-elevation--z2">
+    <header class="chart-card__header"><h2 class="mdc-typography--headline6">ENEM (média geral)</h2></header>
+    <div class="chart-wrap"><canvas id="chartEnem"></canvas></div>
+  </div>
+  <div class="chart-card mdc-elevation--z2">
+    <header class="chart-card__header"><h2 class="mdc-typography--headline6">Gasto/aluno (R$)</h2></header>
+    <div class="chart-wrap"><canvas id="chartGasto"></canvas></div>
+  </div>
+  <div class="chart-card mdc-elevation--z2">
+    <header class="chart-card__header"><h2 class="mdc-typography--headline6">INSE / TDI / Aluno-Doc</h2></header>
+    <div class="chart-wrap"><canvas id="chartContexto"></canvas></div>
+  </div>
+</section>
+
+{% if infra %}
+<h2 class="section-heading">Infraestrutura escolar (2023)</h2>
+<section class="info-card mdc-elevation--z2">
+  <p class="muted mdc-typography--caption">Proporção de escolas com cada item · 0 a 1</p>
+  <div class="infra-grid">
+    <div class="infra-item"><span class="material-icons">water_drop</span><span>Água potável</span><strong>{{ infra.in_agua_potavel|default_if_none:"—"|floatformat:2 }}</strong></div>
+    <div class="infra-item"><span class="material-icons">plumbing</span><span>Esgoto</span><strong>{{ infra.in_esgoto_rede_publica|default_if_none:"—"|floatformat:2 }}</strong></div>
+    <div class="infra-item"><span class="material-icons">menu_book</span><span>Biblioteca</span><strong>{{ infra.in_biblioteca|default_if_none:"—"|floatformat:2 }}</strong></div>
+    <div class="infra-item"><span class="material-icons">computer</span><span>Lab. Informática</span><strong>{{ infra.in_laboratorio_informatica|default_if_none:"—"|floatformat:2 }}</strong></div>
+    <div class="infra-item"><span class="material-icons">wifi</span><span>Internet</span><strong>{{ infra.in_internet|default_if_none:"—"|floatformat:2 }}</strong></div>
+    <div class="infra-item"><span class="material-icons">sports_soccer</span><span>Quadra esportes</span><strong>{{ infra.in_quadra_esportes|default_if_none:"—"|floatformat:2 }}</strong></div>
+    <div class="infra-item"><span class="material-icons">restaurant</span><span>Refeitório</span><strong>{{ infra.in_refeitorio|default_if_none:"—"|floatformat:2 }}</strong></div>
+  </div>
+</section>
+{% endif %}
+
+<h2 class="section-heading">Histórico anual</h2>
+<section class="table-card mdc-elevation--z2">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Ano</th>
+        <th class="num">Abandono EM (%)</th>
+        <th class="num">Abandono Fund (%)</th>
+        <th class="num">IDEB médio</th>
+        <th class="num">SAEB MT</th>
+        <th class="num">SAEB LP</th>
+        <th class="num">ENEM geral</th>
+        <th class="num">Gasto/aluno</th>
+        <th class="num">INSE</th>
+        <th class="num">TDI</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for i in inds %}
+        <tr>
+          <td><strong>{{ i.ano }}</strong></td>
+          <td class="num">{{ i.abandono_med_total|default_if_none:"—"|floatformat:2 }}</td>
+          <td class="num">{{ i.abandono_fund_total|default_if_none:"—"|floatformat:2 }}</td>
+          <td class="num">{{ i.ideb_medio|default_if_none:"—"|floatformat:2 }}</td>
+          <td class="num">{{ i.saeb_12_mt|default_if_none:"—"|floatformat:1 }}</td>
+          <td class="num">{{ i.saeb_12_lp|default_if_none:"—"|floatformat:1 }}</td>
+          <td class="num">{{ i.enem_media_geral|default_if_none:"—"|floatformat:1 }}</td>
+          <td class="num">{{ i.gasto_aluno|default_if_none:"—"|floatformat:0|intcomma }}</td>
+          <td class="num">{{ i.inse|default_if_none:"—"|floatformat:2 }}</td>
+          <td class="num">{{ i.tdi_med_total|default_if_none:"—"|floatformat:2 }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{{ series_json|json_script:"series-data" }}
+{{ radar_json|json_script:"radar-data" }}
+<script>
+  const series = JSON.parse(document.getElementById('series-data').textContent);
+  const radar  = JSON.parse(document.getElementById('radar-data').textContent);
+
+  const baseOpts = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom' }, tooltip: { mode: 'index', intersect: false } },
+    scales: { x: { grid: { color: 'rgba(0,0,0,0.05)' } }, y: { grid: { color: 'rgba(0,0,0,0.05)' } } }
+  };
+
+  const mkLine = (id, datasets) => new Chart(document.getElementById(id), {
+    type: 'line',
+    data: { labels: series.anos, datasets: datasets },
+    options: baseOpts
+  });
+
+  mkLine('chartAbandono', [
+    { label: 'Ensino Médio', data: series.abandono_med, borderColor: '#d32f2f', backgroundColor: 'rgba(211,47,47,0.10)', tension: 0.3, fill: true, borderWidth: 2 },
+    { label: 'Fundamental',  data: series.abandono_fund, borderColor: '#f57c00', tension: 0.3, fill: false, borderWidth: 2 }
+  ]);
+
+  mkLine('chartIdeb', [
+    { label: 'Anos Iniciais', data: series.ideb_ai, borderColor: '#1976d2', tension: 0.3, fill: false, borderWidth: 2 },
+    { label: 'Anos Finais',   data: series.ideb_af, borderColor: '#7b1fa2', tension: 0.3, fill: false, borderWidth: 2 },
+    { label: 'Médio',         data: series.ideb_med, borderColor: '#2e7d32', tension: 0.3, fill: false, borderWidth: 2 }
+  ]);
+
+  mkLine('chartSaeb', [
+    { label: 'Matemática',   data: series.saeb_mt, borderColor: '#1565c0', tension: 0.3, fill: false, borderWidth: 2 },
+    { label: 'Língua Port.', data: series.saeb_lp, borderColor: '#c62828', tension: 0.3, fill: false, borderWidth: 2 }
+  ]);
+
+  mkLine('chartEnem', [
+    { label: 'ENEM geral', data: series.enem_geral, borderColor: '#6a1b9a', backgroundColor: 'rgba(106,27,154,0.10)', tension: 0.3, fill: true, borderWidth: 2 }
+  ]);
+
+  mkLine('chartGasto', [
+    { label: 'Gasto por aluno', data: series.gasto, borderColor: '#ef6c00', backgroundColor: 'rgba(239,108,0,0.10)', tension: 0.3, fill: true, borderWidth: 2 }
+  ]);
+
+  mkLine('chartContexto', [
+    { label: 'INSE',          data: series.inse,      borderColor: '#00838f', tension: 0.3, fill: false, borderWidth: 2, yAxisID: 'y' },
+    { label: 'TDI EM (%)',    data: series.tdi_med,   borderColor: '#5d4037', tension: 0.3, fill: false, borderWidth: 2, yAxisID: 'y2' },
+    { label: 'Alunos/doc EM', data: series.aluno_doc, borderColor: '#283593', tension: 0.3, fill: false, borderWidth: 2, yAxisID: 'y2' }
+  ]);
+
+  // Radar normalizado: cada eixo dividido pela média SP (=1)
+  if (radar.labels.length) {
+    const norm = (arr) => arr.map((v, i) => radar.media_sp[i] ? v / radar.media_sp[i] : 0);
+    new Chart(document.getElementById('radar'), {
+      type: 'radar',
+      data: {
+        labels: radar.labels,
+        datasets: [
+          {
+            label: 'Município',
+            data: norm(radar.mun),
+            borderColor: '#1565c0', backgroundColor: 'rgba(21,101,192,0.20)',
+            borderWidth: 2.5, pointRadius: 4
+          },
+          {
+            label: 'Média SP',
+            data: norm(radar.media_sp),
+            borderColor: '#ef6c00', backgroundColor: 'rgba(239,108,0,0.05)',
+            borderWidth: 2, borderDash: [4,4], pointRadius: 3
+          },
+          {
+            label: 'Média do cluster',
+            data: norm(radar.media_cluster),
+            borderColor: '#7b1fa2', backgroundColor: 'rgba(123,31,162,0.05)',
+            borderWidth: 2, borderDash: [2,3], pointRadius: 3
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom' }, tooltip: {
+          callbacks: { label: (ctx) => `${ctx.dataset.label}: ${(ctx.raw * 100).toFixed(0)}% da média SP` }
+        }},
+        scales: { r: { suggestedMin: 0, suggestedMax: 1.5, ticks: { display: false } } }
+      }
+    });
+  }
+</script>
+{% endblock %}

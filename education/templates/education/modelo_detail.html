@@ -1,0 +1,100 @@
+{% extends 'education/base.html' %}
+{% load static %}
+
+{% block title %}{{ r.nome }} · EducaSP Analytics{% endblock %}
+
+{% block content %}
+<section class="page-header detail-header">
+  <div>
+    <a href="{% url 'education:modelos' %}" class="back-link">
+      <span class="material-icons">arrow_back</span> voltar aos modelos
+    </a>
+    <h1 class="mdc-typography--headline4">{{ r.nome }}</h1>
+    <p class="mdc-typography--subtitle1 muted">
+      Variável-alvo: <strong>{{ r.variavel_alvo }}</strong> · {{ r.n_obs }} observações · {{ r.n_features }} preditores
+    </p>
+  </div>
+  <div class="detail-badges">
+    <div class="cluster-badge badge--ok">
+      <span class="material-icons">verified</span>
+      <div>
+        <span class="cluster-label">RF AUC (CV)</span>
+        <strong>{{ r.rf_auc_cv|floatformat:3 }}</strong>
+      </div>
+    </div>
+    <div class="cluster-badge">
+      <span class="material-icons">analytics</span>
+      <div>
+        <span class="cluster-label">Acurácia (RF)</span>
+        <strong>{{ r.rf_acuracia|floatformat:3 }}</strong>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="kpi-grid kpi-grid--4">
+  <div class="kpi-card mdc-elevation--z2"><div class="kpi-icon kpi-icon--blue"><span class="material-icons">model_training</span></div>
+    <div class="kpi-body"><span class="kpi-label">RF AUC (treino)</span><span class="kpi-value">{{ r.rf_auc|floatformat:3 }}</span><span class="kpi-sub">curva ROC</span></div>
+  </div>
+  <div class="kpi-card mdc-elevation--z2"><div class="kpi-icon kpi-icon--green"><span class="material-icons">verified</span></div>
+    <div class="kpi-body"><span class="kpi-label">RF AUC (CV)</span><span class="kpi-value">{{ r.rf_auc_cv|floatformat:3 }}</span><span class="kpi-sub">5 folds estratificados</span></div>
+  </div>
+  <div class="kpi-card mdc-elevation--z2"><div class="kpi-icon kpi-icon--purple"><span class="material-icons">timeline</span></div>
+    <div class="kpi-body"><span class="kpi-label">LogReg AUC (CV)</span><span class="kpi-value">{{ r.log_auc_cv|floatformat:3 }}</span><span class="kpi-sub">baseline linear</span></div>
+  </div>
+  <div class="kpi-card mdc-elevation--z2"><div class="kpi-icon kpi-icon--amber"><span class="material-icons">straighten</span></div>
+    <div class="kpi-body"><span class="kpi-label">Mediana alvo</span><span class="kpi-value">{{ r.mediana_alvo|floatformat:2 }}</span><span class="kpi-sub">limiar de classificação</span></div>
+  </div>
+</section>
+
+<h2 class="section-heading">Painel de avaliação</h2>
+{% if painel_completo %}
+<section class="info-card mdc-elevation--z2">
+  <p class="muted mdc-typography--caption">
+    Painel gerado pelo script <code>014_Modelos_Preditivos.py</code> contendo:
+    distribuição da variável-alvo, matriz de confusão, curva ROC e importância das variáveis (MDI).
+  </p>
+  <a href="{% static 'graficos/' %}{{ painel_completo }}" target="_blank" rel="noopener" class="model-img-link">
+    <img src="{% static 'graficos/' %}{{ painel_completo }}" alt="Painel completo do modelo {{ r.nome }}" class="model-img">
+  </a>
+</section>
+{% endif %}
+
+<h2 class="section-heading">Importância das variáveis (por permutação)</h2>
+{% if importancia_perm %}
+<section class="info-card mdc-elevation--z2">
+  <p class="muted mdc-typography--caption">
+    Cada barra mostra a queda média de AUC quando os valores daquela variável são embaralhados aleatoriamente
+    no conjunto de teste. Quanto maior a queda, mais o modelo depende daquela variável.
+  </p>
+  <a href="{% static 'graficos/' %}{{ importancia_perm }}" target="_blank" rel="noopener" class="model-img-link">
+    <img src="{% static 'graficos/' %}{{ importancia_perm }}" alt="Importância por permutação — {{ r.nome }}" class="model-img">
+  </a>
+</section>
+{% endif %}
+
+<h2 class="section-heading">Top 3 variáveis (MDI)</h2>
+<section class="info-card mdc-elevation--z2">
+  <p class="mdc-typography--body1">{{ r.top3_features }}</p>
+  <p class="muted mdc-typography--caption">
+    Importância pelo critério Mean Decrease in Impurity do Random Forest. Indica as três variáveis com maior
+    contribuição relativa para reduzir a impureza nas divisões das árvores ao longo de todo o ensemble.
+  </p>
+</section>
+
+{% if todos %}
+<h2 class="section-heading">Outros modelos</h2>
+<section class="kpi-grid kpi-grid--4">
+  {% for m in todos %}
+    <a class="kpi-card mdc-elevation--z2 model-card-link" href="{% url 'education:modelo_detail' m.nome %}">
+      <div class="kpi-icon kpi-icon--blue"><span class="material-icons">model_training</span></div>
+      <div class="kpi-body">
+        <span class="kpi-label">{{ m.nome }}</span>
+        <span class="kpi-value">{{ m.rf_auc_cv|floatformat:3 }}</span>
+        <span class="kpi-sub">AUC (CV)</span>
+      </div>
+    </a>
+  {% endfor %}
+</section>
+{% endif %}
+{% endblock %}

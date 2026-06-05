@@ -1,0 +1,338 @@
+{% extends 'education/base.html' %}
+
+{% block title %}Mapa Interativo · EducaSP Analytics{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@8.2.0/ol.css">
+<style>
+  #map { width: 100%; height: 72vh; border-radius: 12px; background: #e7eef4; }
+
+  /* Overlay de carregamento sobre o mapa */
+  .map-loader {
+    position: absolute; inset: 0;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(2px);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 16px; border-radius: 12px; z-index: 50;
+    transition: opacity .35s ease;
+    pointer-events: none;
+  }
+  .map-loader.hidden { opacity: 0; visibility: hidden; }
+  .map-loader__spinner {
+    width: 48px; height: 48px; border-radius: 50%;
+    border: 4px solid rgba(21,101,192,0.15);
+    border-top-color: var(--primary, #1565c0);
+    animation: spin 0.8s linear infinite;
+  }
+  .map-loader__text {
+    color: #0d3c75; font-weight: 500; font-size: 14px;
+    text-align: center; line-height: 1.4;
+  }
+  .map-loader__text small {
+    display: block; color: #6b7280; font-weight: 400; font-size: 12px; margin-top: 2px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .map-tooltip {
+    position: absolute; background: rgba(15,23,42,0.95); color: #fff;
+    padding: 10px 14px; border-radius: 8px; font-size: 13px; pointer-events: none;
+    transform: translate(-50%, -120%); white-space: nowrap;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.30);
+    border: 1px solid rgba(255,255,255,0.10);
+    line-height: 1.45; min-width: 180px;
+  }
+  .map-tooltip strong { font-size: 14px; color: #fff; }
+  .map-tooltip .tt-row { display: flex; justify-content: space-between; gap: 16px; }
+  .map-tooltip .tt-label { color: rgba(255,255,255,0.65); }
+  .map-tooltip .tt-value { font-variant-numeric: tabular-nums; }
+  .map-tooltip .tt-foot  { font-size: 11px; color: rgba(255,255,255,0.55); margin-top: 4px; }
+  .map-tooltip:after {
+    content: ''; position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%);
+    width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent;
+    border-top: 6px solid rgba(15,23,42,0.95);
+  }
+  .legend {
+    background: #fff; padding: 14px 18px; border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(15,23,42,.10); position: absolute; bottom: 20px; right: 20px;
+    font-size: 12px; min-width: 240px; max-width: 280px;
+  }
+  .legend strong { color: #0d3c75; font-size: 13px; }
+  .legend-bar { display: flex; height: 14px; border-radius: 4px; overflow: hidden; margin: 8px 0 4px; }
+  .legend-step { flex: 1; }
+  .legend-row { display: flex; justify-content: space-between; font-size: 11px; color: #555; }
+  .legend-stats {
+    margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e3e8ee;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; font-size: 11px;
+  }
+  .legend-stats span { color: #6b7280; }
+  .legend-stats strong { color: #1f2937; font-variant-numeric: tabular-nums; }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <h1 class="mdc-typography--headline4">Mapa Coroplético</h1>
+  <p class="mdc-typography--subtitle1 muted">
+    Distribuição espacial dos indicadores nos 645 municípios paulistas. Clique em um município para ver o diagnóstico completo.
+  </p>
+</section>
+
+<section class="map-controls mdc-elevation--z1">
+  <div class="filter-field">
+    <label class="filter-label">Indicador</label>
+    <select id="sel-indicador">
+      {% for cod, nome, _inv in indicadores %}
+        <option value="{{ cod }}">{{ nome }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="filter-field">
+    <label class="filter-label">Ano</label>
+    <select id="sel-ano">
+      {% for a in anos %}<option value="{{ a }}" {% if a == 2023 %}selected{% endif %}>{{ a }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="map-stats" id="map-stats"></div>
+</section>
+
+<div class="map-card mdc-elevation--z2" style="position: relative;">
+  <div id="map"></div>
+  <div class="map-loader" id="map-loader">
+    <div class="map-loader__spinner"></div>
+    <div class="map-loader__text">
+      Carregando malha dos 645 municípios paulistas…
+      <small>~5 MB · pode levar alguns segundos na primeira visita</small>
+    </div>
+  </div>
+  <div class="map-tooltip" id="tooltip" style="display:none;"></div>
+  <div class="legend" id="legend">
+    <strong id="legend-title">Indicador</strong>
+    <div class="legend-bar" id="legend-bar"></div>
+    <div class="legend-row">
+      <span>↓ <span id="legend-min">min</span></span>
+      <span><span id="legend-max">max</span> ↑</span>
+    </div>
+    <div class="legend-stats">
+      <span>Média SP</span><strong id="legend-mean">—</strong>
+      <span>Municípios c/ dado</span><strong id="legend-n">—</strong>
+    </div>
+    <p class="muted mdc-typography--caption" style="margin-top: 8px; font-size: 10px;">
+      Cinza = sem dado · Verde = melhor · Vermelho = pior
+    </p>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/ol@8.2.0/dist/ol.js"></script>
+<script>
+  // Indicadores e flag "menor é melhor"
+  const INVERT = {
+    abandono_med_total: true,
+    tdi_med_total: true,
+  };
+
+  // Tile gratuito sem restrição de Referer (CartoDB Voyager light)
+  const tileLayer = new ol.layer.Tile({
+    source: new ol.source.XYZ({
+      url: 'https://{a-c}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+      attributions: '© OpenStreetMap contributors © CARTO',
+      maxZoom: 19,
+      crossOrigin: 'anonymous'
+    })
+  });
+
+  const map = new ol.Map({
+    target: 'map',
+    layers: [tileLayer],
+    view: new ol.View({ center: ol.proj.fromLonLat([-48.5, -22.5]), zoom: 7, minZoom: 6, maxZoom: 12 }),
+    controls: ol.control.defaults.defaults({ attribution: true, zoom: true })
+  });
+
+  // Proxy via Django: contorna CORS e cacheia a malha do IBGE 24h
+  const GEOJSON_URL = '/api/malha/';
+
+  const vectorSource = new ol.source.Vector({
+    url: GEOJSON_URL,
+    format: new ol.format.GeoJSON({ featureProjection: 'EPSG:3857' })
+  });
+
+  // Estado atual
+  let valuesByCo  = {};
+  let namesByCo   = {};
+  let pctByCo     = {};
+  let curMin = 0, curMax = 1, curMean = 0, curInverted = false;
+  let curIndLabel = '';
+  let curUnit = '';
+  let curAno  = 2023;
+
+  function colorFor(v) {
+    if (v == null || isNaN(v)) return '#d6dbe0';
+    const t = curMax === curMin ? 0.5 : (v - curMin) / (curMax - curMin);
+    const tt = curInverted ? t : 1 - t;
+    // 0 = vermelho, 0.5 = amarelo, 1 = verde
+    const r = tt < 0.5 ? 211 : Math.round(211 - (211 - 46) * (tt - 0.5) * 2);
+    const g = tt < 0.5 ? Math.round(47 + (193 - 47) * tt * 2) : Math.round(193 - (193 - 125) * (tt - 0.5) * 2);
+    const b = tt < 0.5 ? Math.round(47 + (7 - 47) * tt * 2) : Math.round(7 + (50 - 7) * (tt - 0.5) * 2);
+    return `rgb(${r},${g},${b})`;
+  }
+
+  function getCo(feature) {
+    return String(feature.get('codarea') || feature.getId() || '').slice(0, 7);
+  }
+
+  const baseStyle = (feature) => {
+    const co = getCo(feature);
+    const v = valuesByCo[co];
+    return new ol.style.Style({
+      fill:   new ol.style.Fill({ color: colorFor(v) }),
+      stroke: new ol.style.Stroke({ color: '#ffffff', width: 0.5 })
+    });
+  };
+  const hoverStyle = (feature) => {
+    const co = getCo(feature);
+    const v = valuesByCo[co];
+    return new ol.style.Style({
+      fill:   new ol.style.Fill({ color: colorFor(v) }),
+      stroke: new ol.style.Stroke({ color: '#0d3c75', width: 2 }),
+      zIndex: 10
+    });
+  };
+
+  const vectorLayer = new ol.layer.Vector({ source: vectorSource, style: baseStyle });
+  map.addLayer(vectorLayer);
+
+  vectorSource.on('featuresloadend', () => {
+    const ext = vectorSource.getExtent();
+    if (ext && isFinite(ext[0])) map.getView().fit(ext, { padding: [20, 20, 20, 20] });
+    refresh();
+    // Esconde o overlay de carregamento
+    document.getElementById('map-loader').classList.add('hidden');
+  });
+
+  // Se a malha falhar, também esconde o spinner (para o usuário ver alguma coisa)
+  vectorSource.on('featuresloaderror', () => {
+    const loader = document.getElementById('map-loader');
+    loader.querySelector('.map-loader__text').innerHTML =
+      'Erro ao carregar malha dos municípios.<br><small>Verifique sua conexão e recarregue (Ctrl+F5).</small>';
+    setTimeout(() => loader.classList.add('hidden'), 4000);
+  });
+
+  // Hover/tooltip
+  const tooltipEl = document.getElementById('tooltip');
+  let hoverFeat = null;
+
+  function fmt(v, indicador) {
+    if (v == null) return 's/ dado';
+    if (indicador === 'gasto_aluno' || indicador === 'pib_percapita') {
+      return 'R$ ' + Math.round(v).toLocaleString('pt-BR');
+    }
+    if (indicador === 'abandono_med_total' || indicador === 'tdi_med_total') {
+      return v.toFixed(2) + ' %';
+    }
+    return v.toFixed(2);
+  }
+
+  map.on('pointermove', (e) => {
+    const f = map.forEachFeatureAtPixel(e.pixel, (feat) => feat);
+    map.getTargetElement().style.cursor = f ? 'pointer' : '';
+
+    if (hoverFeat && hoverFeat !== f) hoverFeat.setStyle(undefined);
+    if (f) f.setStyle(hoverStyle(f));
+    hoverFeat = f;
+
+    if (!f) { tooltipEl.style.display = 'none'; return; }
+    const co = getCo(f);
+    const nome = namesByCo[co] || ('Município ' + co);
+    const v   = valuesByCo[co];
+    const pct = pctByCo[co];
+
+    let comp = '';
+    if (v != null && curMean) {
+      const diff = ((v - curMean) / curMean) * 100;
+      const sinal = diff > 0 ? '+' : '';
+      const cor = (curInverted ? diff < 0 : diff > 0) ? '#81c784' : '#ef9a9a';
+      comp = `<div class="tt-row"><span class="tt-label">vs. média SP</span><span class="tt-value" style="color:${cor}">${sinal}${diff.toFixed(1)}%</span></div>`;
+    }
+    let pctRow = '';
+    if (pct != null) {
+      const pctTxt = curInverted ? (100 - pct).toFixed(0) : pct.toFixed(0);
+      pctRow = `<div class="tt-row"><span class="tt-label">percentil</span><span class="tt-value">${pctTxt}º</span></div>`;
+    }
+
+    tooltipEl.innerHTML = `
+      <strong>${nome}</strong>
+      <div class="tt-row" style="margin-top:6px"><span class="tt-label">${curIndLabel}</span><span class="tt-value">${fmt(v, document.getElementById('sel-indicador').value)}</span></div>
+      ${comp}
+      ${pctRow}
+      <div class="tt-foot">${curAno} · clique para ver detalhe</div>
+    `;
+    tooltipEl.style.left = e.pixel[0] + 'px';
+    tooltipEl.style.top  = e.pixel[1] + 'px';
+    tooltipEl.style.display = 'block';
+  });
+
+  map.on('click', (e) => {
+    const f = map.forEachFeatureAtPixel(e.pixel, (feat) => feat);
+    if (!f) return;
+    const co = getCo(f);
+    if (co) window.location.href = `/municipios/${co}/`;
+  });
+
+  // Carregar dados
+  function refresh() {
+    const ind = document.getElementById('sel-indicador').value;
+    const ano = document.getElementById('sel-ano').value;
+    curInverted = !!INVERT[ind];
+    curIndLabel = document.querySelector('#sel-indicador option:checked').textContent;
+    curAno = ano;
+
+    fetch(`/api/mapa/?indicador=${ind}&ano=${ano}`)
+      .then(r => r.json())
+      .then(data => {
+        valuesByCo = {}; namesByCo = {}; pctByCo = {};
+        const valores = [];
+        data.features.forEach(f => {
+          const co = String(f.co).slice(0, 7);
+          namesByCo[co] = f.nome;
+          if (f.valor != null) {
+            valuesByCo[co] = f.valor;
+            pctByCo[co] = f.pct;
+            valores.push(f.valor);
+          }
+        });
+
+        curMin = data.min;
+        curMax = data.max;
+        curMean = data.media;
+
+        document.getElementById('legend-title').textContent = curIndLabel;
+        document.getElementById('legend-min').textContent = fmt(curMin, ind);
+        document.getElementById('legend-max').textContent = fmt(curMax, ind);
+        document.getElementById('legend-mean').textContent = fmt(curMean, ind);
+        document.getElementById('legend-n').textContent = data.n;
+
+        // Build legend bar
+        const bar = document.getElementById('legend-bar');
+        bar.innerHTML = '';
+        for (let i = 0; i <= 8; i++) {
+          const div = document.createElement('div');
+          div.className = 'legend-step';
+          div.style.background = colorFor(curMin + (curMax - curMin) * (i / 8));
+          bar.appendChild(div);
+        }
+
+        // Header stats
+        document.getElementById('map-stats').innerHTML =
+          `<span class="muted">média</span> <strong>${fmt(curMean, ind)}</strong>
+           <span class="muted">· min</span> ${fmt(curMin, ind)}
+           <span class="muted">· max</span> ${fmt(curMax, ind)}
+           <span class="muted">· n</span> ${data.n}`;
+
+        vectorLayer.changed();
+      });
+  }
+
+  document.getElementById('sel-indicador').addEventListener('change', refresh);
+  document.getElementById('sel-ano').addEventListener('change', refresh);
+</script>
+{% endblock %}

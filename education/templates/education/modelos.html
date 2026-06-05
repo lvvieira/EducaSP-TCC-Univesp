@@ -1,0 +1,201 @@
+{% extends 'education/base.html' %}
+{% load static %}
+
+{% block title %}Modelos Preditivos · EducaSP Analytics{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <h1 class="mdc-typography--headline4">Modelos Preditivos</h1>
+  <p class="mdc-typography--subtitle1 muted">
+    Quatro modelos de aprendizado de máquina identificam quais variáveis municipais melhor preveem
+    o <strong>risco de abandono</strong> e o <strong>nível de desempenho</strong> educacional.
+    Os resultados orientam onde concentrar políticas públicas.
+  </p>
+</section>
+
+<section class="info-card mdc-elevation--z2 model-explainer">
+  <div class="explainer-grid">
+    <div>
+      <span class="material-icons explainer-icon">psychology</span>
+      <h3>O que esses modelos fazem?</h3>
+      <p>
+        Cada modelo aprende, a partir das informações de centenas de municípios paulistas,
+        como variáveis (gasto por aluno, INSE, infraestrutura escolar, etc.) se conectam a um
+        resultado-alvo (abandono no Ensino Médio ou desempenho no SAEB/ENEM).
+        Em seguida, ele identifica quais variáveis têm maior <em>peso</em> nessa relação.
+      </p>
+    </div>
+    <div>
+      <span class="material-icons explainer-icon">insights</span>
+      <h3>Como o gestor pode usar?</h3>
+      <p>
+        A página de cada município mostra um <strong>diagnóstico individual</strong> baseado nesses
+        modelos: posicionamento contra a média estadual, contra o cluster pareado, e os top-3
+        pontos fortes e top-3 pontos de atenção. As variáveis em destaque na tabela abaixo são as
+        com maior potencial de impacto se o município investir nelas.
+      </p>
+    </div>
+    <div>
+      <span class="material-icons explainer-icon">verified_user</span>
+      <h3>Como confiar?</h3>
+      <p>
+        Cada modelo é validado por <strong>validação cruzada estratificada</strong> em 5 folds —
+        ou seja, treinado em 80% dos municípios e testado nos 20% restantes, repetindo 5 vezes.
+        A coluna AUC (CV) é a métrica mais conservadora: 1,0 = perfeito · 0,5 = aleatório.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="kpi-grid kpi-grid--4">
+  {% for r in resultados %}
+    <a class="kpi-card model-card mdc-elevation--z2 model-card-link" href="{% url 'education:modelo_detail' r.nome %}">
+      <div class="kpi-icon kpi-icon--blue"><span class="material-icons">model_training</span></div>
+      <div class="kpi-body">
+        <span class="kpi-label">{{ r.nome }}</span>
+        <span class="kpi-value">{{ r.rf_auc_cv|floatformat:3 }}</span>
+        <span class="kpi-sub">AUC (validação cruzada) · ver detalhes →</span>
+      </div>
+    </a>
+  {% endfor %}
+</section>
+
+<section class="chart-grid chart-grid--2">
+  <div class="chart-card mdc-elevation--z2">
+    <header class="chart-card__header">
+      <h2 class="mdc-typography--headline6">Capacidade preditiva (AUC)</h2>
+      <span class="muted mdc-typography--caption">Random Forest vs. Regressão Logística · CV 5-folds</span>
+    </header>
+    <div class="chart-wrap" style="height: 320px;"><canvas id="chartAuc"></canvas></div>
+  </div>
+
+  <div class="chart-card mdc-elevation--z2">
+    <header class="chart-card__header">
+      <h2 class="mdc-typography--headline6">Acurácia por modelo</h2>
+      <span class="muted mdc-typography--caption">Limiar 0,50 (mediana)</span>
+    </header>
+    <div class="chart-wrap" style="height: 320px;"><canvas id="chartAcc"></canvas></div>
+  </div>
+</section>
+
+<h2 class="section-heading">Comparativo gerado pelo pipeline</h2>
+<section class="chart-grid chart-grid--2">
+  <figure class="analise-card mdc-elevation--z2">
+    <a href="{% static 'graficos/MX_metricas_comparativas_sp.png' %}" target="_blank" rel="noopener">
+      <img src="{% static 'graficos/MX_metricas_comparativas_sp.png' %}" alt="Métricas comparativas" loading="lazy">
+    </a>
+    <figcaption>Métricas comparativas dos 4 modelos (AUC, acurácia, precisão, revocação)</figcaption>
+  </figure>
+  <figure class="analise-card mdc-elevation--z2">
+    <a href="{% static 'graficos/MX_comparacao_importancia_modelos_sp.png' %}" target="_blank" rel="noopener">
+      <img src="{% static 'graficos/MX_comparacao_importancia_modelos_sp.png' %}" alt="Importância comparativa" loading="lazy">
+    </a>
+    <figcaption>Importância das variáveis (MDI) lado-a-lado entre os 4 modelos</figcaption>
+  </figure>
+</section>
+
+<section class="table-card mdc-elevation--z2">
+  <h2 class="mdc-typography--headline6 table-title">Resultados detalhados</h2>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Modelo</th>
+        <th>Variável-alvo</th>
+        <th class="num">N</th>
+        <th class="num">LogReg AUC (CV)</th>
+        <th class="num">RF AUC (CV)</th>
+        <th class="num">RF Acurácia</th>
+        <th>Variáveis mais influentes (Top 3)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in resultados %}
+        <tr>
+          <td><strong>{{ r.nome }}</strong></td>
+          <td><span class="chip">{{ r.variavel_alvo }}</span></td>
+          <td class="num">{{ r.n_obs }}</td>
+          <td class="num">{{ r.log_auc_cv|floatformat:3 }}</td>
+          <td class="num"><strong>{{ r.rf_auc_cv|floatformat:3 }}</strong></td>
+          <td class="num">{{ r.rf_acuracia|floatformat:3 }}</td>
+          <td class="features">{{ r.top3_features }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="info-card mdc-elevation--z2">
+  <h2 class="mdc-typography--headline6">Principais achados — leitura para gestores</h2>
+  <div class="findings-grid">
+    <div class="finding finding--abandono">
+      <span class="material-icons">trending_down</span>
+      <h3>Abandono escolar (M1, M4)</h3>
+      <p>
+        As variáveis com maior peso preditivo são <strong>institucionais</strong>: relação alunos/docente,
+        distorção idade-série e presença de laboratório de informática.
+        Isso indica que <em>políticas de retenção</em> têm retorno maior quando focam em estrutura
+        pedagógica do que apenas em transferências de renda.
+      </p>
+    </div>
+    <div class="finding finding--desempenho">
+      <span class="material-icons">trending_up</span>
+      <h3>Desempenho acadêmico (M2, M3)</h3>
+      <p>
+        O preditor dominante é o <strong>INSE</strong> (Nível Socioeconômico), seguido por internet
+        nas escolas e gasto por aluno. Para elevar o desempenho, intervenções precisam ser
+        <em>intersetoriais</em>, articulando educação com geração de renda e proteção social.
+      </p>
+    </div>
+    <div class="finding finding--gasto">
+      <span class="material-icons">payments</span>
+      <h3>O gasto por aluno é determinante?</h3>
+      <p>
+        Não isoladamente. A correlação direta entre gasto/aluno e IDEB é praticamente nula
+        (r = −0,045). O gasto vira preditor relevante quando combinado com outras variáveis no
+        Random Forest, mas sempre <em>secundário</em> ao INSE e às variáveis institucionais.
+      </p>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  fetch('/api/modelos/').then(r => r.json()).then(({ modelos }) => {
+    const labels = modelos.map(m => m.nome.replace(/_/g, ' '));
+
+    new Chart(document.getElementById('chartAuc'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Logística (CV)',     data: modelos.map(m => m.log_auc_cv), backgroundColor: '#90caf9', borderRadius: 4 },
+          { label: 'Random Forest (CV)', data: modelos.map(m => m.rf_auc_cv),  backgroundColor: '#1565c0', borderRadius: 4 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom' } },
+        scales: { y: { min: 0.5, max: 1.0, ticks: { stepSize: 0.05 } } }
+      }
+    });
+
+    new Chart(document.getElementById('chartAcc'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Logística', data: modelos.map(m => m.log_acuracia), backgroundColor: '#ce93d8', borderRadius: 4 },
+          { label: 'Random Forest', data: modelos.map(m => m.rf_acuracia), backgroundColor: '#7b1fa2', borderRadius: 4 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom' } },
+        scales: { y: { min: 0.5, max: 0.85, ticks: { stepSize: 0.05 } } }
+      }
+    });
+  });
+</script>
+{% endblock %}
