@@ -28,8 +28,6 @@ python manage.py runserver
 
 Acesse http://127.0.0.1:8000.
 
-> **Importante.** O arquivo `db.sqlite3` deste repositório contém **apenas o esquema** das tabelas, sem dados. O dataset consolidado (`df_master_sp.csv`, 3.870 observações × 81 indicadores) **não é distribuído** junto com este código; ele é parte do pipeline de extração descrito no TCC e seu acesso é restrito. Sem ele, a aplicação roda mas exibe páginas vazias.
->
 > Para ver a aplicação **com dados reais**, utilize a demo pública: https://204.168.152.11.nip.io/
 
 ## Estrutura
