@@ -6,6 +6,8 @@ A aplicação consolida indicadores educacionais, socioeconômicos e de infraest
 
 Demo pública: https://204.168.152.11.nip.io/
 
+> **Aviso de licença.** Este código é publicado **exclusivamente para avaliação acadêmica** da banca do TCC. Não é open source. Veja `LICENSE` antes de qualquer uso. Cópia, redistribuição, modificação ou uso (comercial ou não) **não são autorizados**.
+
 ## Stack
 
 - Python 3.12
@@ -14,12 +16,9 @@ Demo pública: https://204.168.152.11.nip.io/
 - WhiteNoise para servir estáticos
 - Gunicorn em produção
 
-## Rodando localmente
+## Rodando localmente (banca/orientadores)
 
 ```bash
-git clone https://github.com/<seu-usuario>/educasp-analytics.git
-cd educasp-analytics
-
 python -m venv .venv
 source .venv/bin/activate           # Linux/Mac/WSL
 # .venv\Scripts\activate            # Windows PowerShell
@@ -31,7 +30,9 @@ python manage.py runserver
 
 Acesse http://127.0.0.1:8000.
 
-O banco `db.sqlite3` já vem populado com os dados consolidados pela pipeline do TCC. Para reimportar do CSV (caso você tenha o `df_master_sp.csv` da pipeline), rode `python manage.py importar_dados`.
+> **Importante.** O arquivo `db.sqlite3` deste repositório contém **apenas o esquema** das tabelas, sem dados. O dataset consolidado (`df_master_sp.csv`, 3.870 observações × 81 indicadores) **não é distribuído** junto com este código; ele é parte do pipeline de extração descrito no TCC e seu acesso é restrito. Sem ele, a aplicação roda mas exibe páginas vazias.
+>
+> Para ver a aplicação **com dados reais**, utilize a demo pública: https://204.168.152.11.nip.io/
 
 ## Estrutura
 
@@ -39,7 +40,7 @@ O banco `db.sqlite3` já vem populado com os dados consolidados pela pipeline do
 webapp/
 ├── manage.py
 ├── requirements.txt
-├── db.sqlite3                      # banco pré-populado (645 municípios)
+├── db.sqlite3                      # apenas o esquema, sem dados (ver aviso acima)
 ├── tcc_webapp/                     # configurações Django
 │   ├── settings.py
 │   ├── urls.py
@@ -79,4 +80,8 @@ Principais achados:
 
 ## Licença
 
-MIT (ver `LICENSE`).
+**Todos os direitos reservados.** Consulte o arquivo [`LICENSE`](LICENSE) para o texto integral (PT-BR e EN).
+
+O código deste repositório é disponibilizado apenas para inspeção pela banca avaliadora do TCC. Não é permitido copiar, modificar, redistribuir, hospedar ou usar este código, no todo ou em parte, para qualquer finalidade, sem autorização prévia e por escrito do titular.
+
+Contato: lucas.vieira@lvvieira.com

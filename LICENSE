@@ -1,21 +1,56 @@
-MIT License
+EducaSP Analytics
+Copyright (c) 2026 Lucas Vasconcelos Vieira e equipe TCC UNIVESP.
 
-Copyright (c) 2026 Lucas Vasconcelos Vieira e equipe TCC UNIVESP
+TODOS OS DIREITOS RESERVADOS / ALL RIGHTS RESERVED.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+────────────────────────────────────────────────────────────────────────────────
+PORTUGUÊS
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Este código-fonte é publicado exclusivamente para fins de avaliação acadêmica,
+no âmbito do Trabalho de Conclusão de Curso (TCC) do Bacharelado em Ciência
+de Dados da Universidade Virtual do Estado de São Paulo (UNIVESP), apresentado
+em 2026.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+NÃO é concedida permissão, expressa ou tácita, para:
+  - copiar, reproduzir, distribuir, hospedar ou transmitir qualquer parte
+    deste código, no todo ou em parte, por qualquer meio;
+  - modificar, adaptar, traduzir, descompilar, fazer engenharia reversa ou
+    criar trabalhos derivados;
+  - utilizar este código, em qualquer forma, para fins comerciais ou
+    não-comerciais, incluindo treinamento de modelos de aprendizado de máquina;
+  - publicar, sublicenciar, vender ou transferir qualquer porção desta obra.
+
+É permitida apenas a LEITURA E INSPEÇÃO do código pela banca avaliadora e
+revisores acadêmicos da UNIVESP, estritamente para fins de avaliação do TCC.
+
+Qualquer outro uso requer autorização prévia e por escrito do titular dos
+direitos autorais.
+
+O SOFTWARE É FORNECIDO "COMO ESTÁ", SEM GARANTIA DE QUALQUER TIPO.
+
+────────────────────────────────────────────────────────────────────────────────
+ENGLISH
+
+This source code is published solely for academic evaluation purposes, as part
+of the Bachelor's thesis (Trabalho de Conclusão de Curso) for the Bacharelado em
+Ciência de Dados program at Universidade Virtual do Estado de São Paulo
+(UNIVESP), submitted in 2026.
+
+NO permission, express or implied, is granted to:
+  - copy, reproduce, distribute, host, or transmit any part of this code,
+    in whole or in part, by any means;
+  - modify, adapt, translate, decompile, reverse-engineer, or create
+    derivative works;
+  - use this code, in any form, for commercial or non-commercial purposes,
+    including the training of machine learning models;
+  - publish, sublicense, sell, or transfer any portion of this work.
+
+Only READING AND INSPECTION of the code by UNIVESP examiners and academic
+reviewers is permitted, strictly for the purpose of thesis evaluation.
+
+Any other use requires prior written permission from the copyright holder.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+
+────────────────────────────────────────────────────────────────────────────────
+Contato / Contact: lucas.vieira@lvvieira.com
