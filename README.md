@@ -6,8 +6,6 @@ A aplicação consolida indicadores educacionais, socioeconômicos e de infraest
 
 Demo pública: https://204.168.152.11.nip.io/
 
-> **Aviso de licença.** Este código é publicado **exclusivamente para avaliação acadêmica** da banca do TCC. Não é open source. Veja `LICENSE` antes de qualquer uso. Cópia, redistribuição, modificação ou uso (comercial ou não) **não são autorizados**.
-
 ## Stack
 
 - Python 3.12
@@ -81,7 +79,5 @@ Principais achados:
 ## Licença
 
 **Todos os direitos reservados.** Consulte o arquivo [`LICENSE`](LICENSE) para o texto integral (PT-BR e EN).
-
-O código deste repositório é disponibilizado apenas para inspeção pela banca avaliadora do TCC. Não é permitido copiar, modificar, redistribuir, hospedar ou usar este código, no todo ou em parte, para qualquer finalidade, sem autorização prévia e por escrito do titular.
 
 Contato: lucas.vieira@lvvieira.com
